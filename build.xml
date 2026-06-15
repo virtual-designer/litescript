@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="litescript" default="default" basedir=".">
+    <description>Builds litescript.</description>
+    
+    <property name="build.dir" value="build" />
+    <property name="build.dir.classes.java" value="${build.dir}/classes/main/java" />
+    <property name="project.mainclass" value="me.rakinar2.litescript.Main" />
+    
+    <!-- Targets -->
+    <target name="default" description="Default target">
+        <fail>Please specify a target other than "default"!</fail>
+    </target>
+    
+    <target name="build" description="Builds the project" depends="compile" />
+    <target name="compile" description="Compiles the project">
+        <mkdir dir="${build.dir.classes.java}/classes/main/java" />
+        <javac srcdir="src/main/java" destdir="${build.dir.classes.java}" 
+               source="26" 
+               target="26" 
+               includeantruntime="false" />
+    </target>
+    <target name="run" description="Runs the project" depends="build">
+        <java classname="${project.mainclass}" 
+              classpath="${build.dir.classes.java}" />
+    </target>
+    <target name="jar" description="Creates a JAR for the project"
+            depends="build">
+        <mkdir dir="${build.dir}/META-INF" />
+        <copy file="src/main/resources/META-INF/MANIFEST.MF" 
+              tofile="${build.dir}/META-INF/MANIFEST.MF" />
+        <replace file="${build.dir}/META-INF/MANIFEST.MF" 
+                 token="@MAIN_CLASS@" 
+                 value="${project.mainclass}" />
+        <jar destfile="${build.dir}/${ant.project.name}.jar"
+             basedir="${build.dir.classes.java}" 
+             manifest="${build.dir}/META-INF/MANIFEST.MF" />
+    </target>
+</project>
