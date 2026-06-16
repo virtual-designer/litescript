@@ -24,7 +24,44 @@ package me.rakinar2.litescript.ast;
  * 
  * @author rakinar2
  */
-public record Location(long lineStart, long columnStart, 
-                       long lineEnd, long columnEnd) {
+public record Location(String fileName, long lineStart, long columnStart, 
+                       long lineEnd, long columnEnd) implements SourceLocatable {
+    public static Location combine(SourceLocatable... locations) {
+        long lineStart = Long.MAX_VALUE, columnStart = Long.MAX_VALUE;
+        long lineEnd = Long.MIN_VALUE, columnEnd = Long.MIN_VALUE;
+        String fileName = null;
+        
+        if (locations.length == 0) {
+            throw new IllegalArgumentException("Must pass at least one Location object");
+        }
+        
+        for (SourceLocatable locatable : locations) {
+            final Location location = locatable.getLocation();
+            
+            if (location.lineStart < lineStart || 
+                (location.lineStart == lineStart && 
+                location.columnStart < columnStart)) {
+                lineStart = location.lineStart;
+                columnStart = location.columnStart;
+            }
+            
+            if (location.lineEnd > lineEnd || 
+                (location.lineEnd == lineEnd && 
+                location.columnEnd > columnEnd)) {
+                lineEnd = location.lineEnd;
+                columnEnd = location.columnEnd;
+            }
+            
+            if (fileName == null) {
+                fileName = location.fileName;
+            }
+        }
+        
+        return new Location(fileName, lineStart, columnStart, lineEnd, columnEnd);
+    }
     
+    @Override
+    public Location getLocation() {
+        return this;
+    }
 }

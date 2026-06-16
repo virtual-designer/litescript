@@ -48,21 +48,23 @@ public class Lexer {
             Map.entry(']', TokenType.BRACKET_CLOSE)
         );
     
+    private String fileName;
     private String[] inputs;
     private int currentInputIndex = 0;
     private long line = 1;
     private long column = 1;
     private int index = 0;
-    private long combinedLength;
     
-    public Lexer(String[] inputs) {        
+    @FunctionalInterface
+    private static interface TokenConsumer {
+        public boolean consume(List<Token> tokens) throws LexicalAnalysisException; 
+    }
+    
+    public Lexer(String fileName, String[] inputs) {
+        this.fileName = fileName;
         this.inputs = Stream.of(inputs)
             .filter(input -> !input.isEmpty())
             .toArray(String[]::new);
-        
-        this.combinedLength = Stream.of(this.inputs)
-            .mapToLong(str -> (long) str.length())
-            .reduce(0L, (acc, len) -> acc + len);
     }
     
     private boolean isInputExhausted() {
@@ -89,12 +91,18 @@ public class Lexer {
         return inputs[currentInputIndex];
     }
     
-    private char peek(int offset) {
+    private char peek(int offset) throws LexicalAnalysisException {
+        try {
         char c = getCurrentInputString().charAt(index + offset);
         return c;
+        }
+        catch (IndexOutOfBoundsException exception) {
+            throw new LexicalAnalysisException("Unexpected end of file", 
+                    new Location(fileName, line, column, line, column), exception);
+        }
     }
     
-    private char peek() {
+    private char peek() throws LexicalAnalysisException {
         return peek(0);
     }
     
@@ -106,13 +114,58 @@ public class Lexer {
         consume(1);
     }
     
-    public List<Token> lex() throws LexicalAnalysisException {
-        List<Token> tokens = new LinkedList<>();
+    private boolean lexSpace(@SuppressWarnings("unused") List<Token> _tokens) throws LexicalAnalysisException {
+        char c = peek();
+        boolean trimmed = false;
+        
+        while (Character.isSpaceChar(c)) {
+            if (c == '\n') {
+                column = 1;
+                line++;
+            }
+            else {
+                column++;
+            }
 
-        while (!isInputExhausted()) {
-            char c = peek();
-            
-            if (Character.isSpaceChar(c)) {
+            consume();
+            c = peek();
+            trimmed = true;
+        }
+        
+        return trimmed;
+    }
+    
+    private boolean lexStringLiteral(List<Token> tokens) throws LexicalAnalysisException {
+        char c = peek();
+        
+        if (c == '"' || c == '\'') {
+            char quote = c;
+            long lineStart = line, columnStart = column;
+            StringBuilder builder = new StringBuilder();
+
+            consume();
+
+            while (!isInputExhausted() && (c = peek()) != quote) {
+                if (c == '\\') {
+                    consume();
+
+                    c = peek();
+                    c = switch (c) {
+                        case 'n' -> '\n';
+                        case 'r' -> '\r';
+                        case 'f' -> '\f';
+                        case 't' -> '\t';
+                        case 'b' -> '\b';
+                        case 'v' -> '\u000b';
+                        case '\\' -> '\\';
+                        case '\'' -> '\'';
+                        case '"' -> '"';
+                        default -> 
+                            throw new LexicalAnalysisException("Invalid escape sequence: \\" + c, 
+                                    new Location(fileName, line, column, line, column + 1));
+                    };
+                }
+
                 if (c == '\n') {
                     column = 1;
                     line++;
@@ -120,54 +173,122 @@ public class Lexer {
                 else {
                     column++;
                 }
-                
+
+                builder.append(c);
                 consume();
-                continue;
             }
+
+            if (isInputExhausted() || peek() != quote) {
+                throw new LexicalAnalysisException(
+                        "Unterminated string literal: Expected " + quote, 
+                        new Location(fileName, lineStart, columnStart, line, column));
+            }
+
+            consume();
+
+            String str = builder.toString();
+            Location location = new Location(fileName, lineStart, columnStart, line, column);
+
+            tokens.add(new Token(TokenType.STRING_LITERAL, str, location));
+            return true;
+        }
+    
+        return false;
+    }
+    
+    private boolean lexNumericLiteral(List<Token> tokens) throws LexicalAnalysisException {
+        char c = peek();
+        
+        if (Character.isDigit(c)) {
+            long lineStart = line, columnStart = column;
+            StringBuilder builder = new StringBuilder();
+
+            while (!isInputExhausted() && 
+                   (Character.isDigit(c = peek()) || c == '_')) {
+                if (c != '_') {
+                    builder.append(c);
+                }
+
+                consume();
+                column++;
+            }
+
+            String str = builder.toString();
+            Location location = new Location(fileName, lineStart, columnStart, line, column);
+
+            try {
+                Long.parseLong(str, 10);
+            }
+            catch (NumberFormatException exception) {
+                throw new LexicalAnalysisException(
+                        "Invalid integer literal: " + str, 
+                        location);
+            }
+
+            tokens.add(new Token(TokenType.INT_LITERAL, str, location));
+            return true;
+        }
+            
+        return false;
+    }
+    
+    private boolean lexIdentifier(List<Token> tokens) throws LexicalAnalysisException {
+        char c = peek();
+        
+        if (Character.isAlphabetic(c)) {
+            long lineStart = line, columnStart = column;
+            StringBuilder builder = new StringBuilder();
+
+            while (!isInputExhausted() && 
+                   (Character.isLetterOrDigit(c = peek()) || c == '_' || c == '$')) {
+                builder.append(c);                    
+                consume();
+                column++;
+            }
+
+            String str = builder.toString();
+            Location location = new Location(fileName, lineStart, columnStart, line, column);
+
+            tokens.add(new Token(TokenType.IDENTIFIER, str, location));
+            return true;
+        }
+        
+        return false;
+    }
+    
+    public List<Token> lex() throws LexicalAnalysisException {
+        final List<Token> tokens = new LinkedList<>();
+        final TokenConsumer[] tokenConsumers = {
+            this::lexSpace,
+            this::lexIdentifier,
+            this::lexStringLiteral,
+            this::lexNumericLiteral,
+        };
+
+        mainLoop:
+        while (!isInputExhausted()) {            
+            for (final TokenConsumer consumer : tokenConsumers) {
+                if (consumer.consume(tokens)) {
+                    continue mainLoop;
+                }
+            }
+            
+            final char c = peek();
             
             if (SINGLE_CHAR_TOKENS.containsKey(c)) {
                 tokens.add(new Token(SINGLE_CHAR_TOKENS.get(c), 
                            Character.toString(c), 
-                           new Location(line, column, line, column + 1)));
+                           new Location(fileName, line, column, line, column + 1)));
                 consume();
                 column++;
                 continue;
             }
             
-            if (Character.isDigit(c)) {
-                long lineStart = line, columnStart = column;
-                StringBuilder builder = new StringBuilder();
-                
-                while (!isInputExhausted() && 
-                       (Character.isDigit(c = peek()) || c == '_')) {
-                    if (c != '_') {
-                        builder.append(c);
-                    }
-                    
-                    consume();
-                    column++;
-                }
-                
-                String str = builder.toString();
-                Location location = new Location(lineStart, columnStart, line, column);
-                
-                try {
-                    Long.parseLong(str, 10);
-                }
-                catch (NumberFormatException exception) {
-                    throw new LexicalAnalysisException(
-                            "Invalid integer literal: " + str, 
-                            location);
-                }
-                
-                tokens.add(new Token(TokenType.INT_LITERAL, str, location));
-                continue;
-            }
-            
             throw new LexicalAnalysisException("Unexpected token: " + c, 
-                    new Location(line, column, line, column));
+                    new Location(fileName, line, column, line, column));
         }
         
+        tokens.add(new Token(TokenType.EOF, "[EOF]", new Location(fileName, line, column, line, column)));
         return tokens;
     }
 }

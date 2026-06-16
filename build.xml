@@ -7,8 +7,9 @@
     <property name="project.mainclass" value="me.rakinar2.litescript.Main" />
     
     <!-- Targets -->
+    
     <target name="default" description="Default target">
-        <fail>Please specify a target other than "default"!</fail>
+        <fail>Please specify a target other than "default"</fail>
     </target>
     
     <target name="build" description="Builds the project" depends="compile" />
@@ -19,10 +20,12 @@
                target="26" 
                includeantruntime="false" />
     </target>
+    
     <target name="run" description="Runs the project" depends="build">
         <java classname="${project.mainclass}" 
               classpath="${build.dir.classes.java}" />
     </target>
+    
     <target name="jar" description="Creates a JAR for the project"
             depends="build">
         <mkdir dir="${build.dir}/META-INF" />
@@ -34,5 +37,13 @@
         <jar destfile="${build.dir}/${ant.project.name}.jar"
              basedir="${build.dir.classes.java}" 
              manifest="${build.dir}/META-INF/MANIFEST.MF" />
+    </target>
+    
+    <target name="runjar" description="Generates a JAR and runs it" depends="jar">
+        <java jar="${build.dir}/${ant.project.name}.jar" fork="true" />
+    </target>
+    
+    <target name="clean" description="Cleans the project.">
+        <delete dir="${build.dir}" />
     </target>
 </project>

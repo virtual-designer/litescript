@@ -17,25 +17,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * 
  */
-package me.rakinar2.litescript.frontend.lexer;
-
-import me.rakinar2.litescript.ast.Location;
+package me.rakinar2.litescript.ast;
 
 /**
- * Thrown due to lexical analysis or token generation issues.
- * 
+ *
  * @author rakinar2
  */
-public class LexicalAnalysisException extends Exception {
-    public final Location location;
-    
-    public LexicalAnalysisException(String message, Location location) {
-        super(message);
-        this.location = location;
-    }
-    
-    public LexicalAnalysisException(String message, Location location, Throwable cause) {
-        super(message, cause);
-        this.location = location;
-    }
+public interface SourceLocatable {
+    public Location getLocation();
 }

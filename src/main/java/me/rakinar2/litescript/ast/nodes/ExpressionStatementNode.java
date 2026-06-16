@@ -17,25 +17,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * 
  */
-package me.rakinar2.litescript.frontend.lexer;
+package me.rakinar2.litescript.ast.nodes;
 
+import java.util.List;
 import me.rakinar2.litescript.ast.Location;
 
 /**
- * Thrown due to lexical analysis or token generation issues.
+ * Wrapper node to use expressions as statements.
  * 
  * @author rakinar2
  */
-public class LexicalAnalysisException extends Exception {
-    public final Location location;
+public class ExpressionStatementNode extends StatementNode {
+    public final ExpressionNode expression;
     
-    public LexicalAnalysisException(String message, Location location) {
-        super(message);
-        this.location = location;
+    public ExpressionStatementNode(ExpressionNode expression, Location location) {
+        super(location);
+        this.expression = expression;
     }
-    
-    public LexicalAnalysisException(String message, Location location, Throwable cause) {
-        super(message, cause);
-        this.location = location;
+
+    @Override
+    public Iterable<AbstractNode> getBranches() {
+        return List.of(expression);
     }
 }

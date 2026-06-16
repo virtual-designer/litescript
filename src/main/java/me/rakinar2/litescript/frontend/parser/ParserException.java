@@ -17,24 +17,24 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * 
  */
-package me.rakinar2.litescript.frontend.lexer;
+package me.rakinar2.litescript.frontend.parser;
 
 import me.rakinar2.litescript.ast.Location;
 
 /**
- * Thrown due to lexical analysis or token generation issues.
+ * Thrown due to syntax errors or parser issues.
  * 
  * @author rakinar2
  */
-public class LexicalAnalysisException extends Exception {
+public class ParserException extends RuntimeException {
     public final Location location;
     
-    public LexicalAnalysisException(String message, Location location) {
+    public ParserException(String message, Location location) {
         super(message);
         this.location = location;
     }
     
-    public LexicalAnalysisException(String message, Location location, Throwable cause) {
+    public ParserException(String message, Location location, Throwable cause) {
         super(message, cause);
         this.location = location;
     }

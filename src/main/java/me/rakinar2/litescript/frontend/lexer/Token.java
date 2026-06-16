@@ -20,13 +20,14 @@
 package me.rakinar2.litescript.frontend.lexer;
 
 import me.rakinar2.litescript.ast.Location;
+import me.rakinar2.litescript.ast.SourceLocatable;
 
 /**
  * Token representation.
  * 
  * @author rakinar2
  */
-public final class Token {
+public final class Token implements SourceLocatable {
     public final TokenType type;
     public final String value;
     public final Location location;
@@ -45,5 +46,10 @@ public final class Token {
         }
         
         return str;
+    }
+
+    @Override
+    public Location getLocation() {
+        return location;
     }
 }

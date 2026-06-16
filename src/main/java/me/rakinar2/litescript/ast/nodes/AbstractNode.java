@@ -17,25 +17,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * 
  */
-package me.rakinar2.litescript.frontend.lexer;
+package me.rakinar2.litescript.ast.nodes;
 
 import me.rakinar2.litescript.ast.Location;
+import me.rakinar2.litescript.ast.SourceLocatable;
 
 /**
- * Thrown due to lexical analysis or token generation issues.
- * 
+ *
  * @author rakinar2
  */
-public class LexicalAnalysisException extends Exception {
+public abstract class AbstractNode implements SourceLocatable {
     public final Location location;
-    
-    public LexicalAnalysisException(String message, Location location) {
-        super(message);
+
+    protected AbstractNode(Location location) {
         this.location = location;
     }
     
-    public LexicalAnalysisException(String message, Location location, Throwable cause) {
-        super(message, cause);
-        this.location = location;
+    public abstract Iterable<AbstractNode> getBranches();
+    
+    @Override
+    public Location getLocation() {
+        return location;
     }
 }
