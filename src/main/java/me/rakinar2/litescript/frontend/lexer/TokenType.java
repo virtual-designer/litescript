@@ -44,4 +44,6 @@ public enum TokenType {
     BRACE_CLOSE,
     BRACKET_OPEN,
     BRACKET_CLOSE,
+    SEMICOLON,
+    DOT,
 }

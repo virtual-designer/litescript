@@ -45,7 +45,16 @@ public class Lexer {
             Map.entry('{', TokenType.BRACE_OPEN),
             Map.entry('}', TokenType.BRACE_CLOSE),
             Map.entry('[', TokenType.BRACKET_OPEN),
-            Map.entry(']', TokenType.BRACKET_CLOSE)
+            Map.entry(']', TokenType.BRACKET_CLOSE),
+            Map.entry(';', TokenType.SEMICOLON),
+            Map.entry('.', TokenType.DOT)
+        );
+    
+    private static Map<String, TokenType> KEYWORD_TOKENS = 
+        Map.ofEntries(
+            Map.entry("true", TokenType.BOOLEAN_TRUE),
+            Map.entry("false", TokenType.BOOLEAN_FALSE),
+            Map.entry("null", TokenType.NULL)
         );
     
     private String fileName;
@@ -68,8 +77,8 @@ public class Lexer {
     }
     
     private boolean isInputExhausted() {
-        return index >= inputs[currentInputIndex].length() && 
-               currentInputIndex >= (inputs.length - 1);
+        return currentInputIndex >= (inputs.length - 1) && 
+               (inputs.length == 0 || index >= inputs[currentInputIndex].length());
     }
     
     private boolean advance(int length) {   
@@ -118,7 +127,7 @@ public class Lexer {
         char c = peek();
         boolean trimmed = false;
         
-        while (Character.isSpaceChar(c)) {
+        while (c == '\t' || c == ' ' || c == '\r' || c == '\n') {
             if (c == '\n') {
                 column = 1;
                 line++;
@@ -201,10 +210,19 @@ public class Lexer {
         
         if (Character.isDigit(c)) {
             long lineStart = line, columnStart = column;
+            boolean isFloat = false;
             StringBuilder builder = new StringBuilder();
 
             while (!isInputExhausted() && 
-                   (Character.isDigit(c = peek()) || c == '_')) {
+                   (Character.isDigit(c = peek()) || c == '_' || c == '.')) {
+                if (c == '.') {
+                    if (isFloat) {
+                        break;
+                    }
+                    
+                    isFloat = true;
+                }
+                
                 if (c != '_') {
                     builder.append(c);
                 }
@@ -217,7 +235,12 @@ public class Lexer {
             Location location = new Location(fileName, lineStart, columnStart, line, column);
 
             try {
-                Long.parseLong(str, 10);
+                if (isFloat) {
+                    Double.parseDouble(str);
+                }
+                else {
+                    Long.parseLong(str, 10);
+                }
             }
             catch (NumberFormatException exception) {
                 throw new LexicalAnalysisException(
@@ -225,7 +248,7 @@ public class Lexer {
                         location);
             }
 
-            tokens.add(new Token(TokenType.INT_LITERAL, str, location));
+            tokens.add(new Token(isFloat ? TokenType.FLOAT_LITERAL : TokenType.INT_LITERAL, str, location));
             return true;
         }
             
@@ -249,7 +272,7 @@ public class Lexer {
             String str = builder.toString();
             Location location = new Location(fileName, lineStart, columnStart, line, column);
 
-            tokens.add(new Token(TokenType.IDENTIFIER, str, location));
+            tokens.add(new Token(KEYWORD_TOKENS.getOrDefault(str, TokenType.IDENTIFIER), str, location));
             return true;
         }
         
@@ -281,7 +304,7 @@ public class Lexer {
                            new Location(fileName, line, column, line, column + 1)));
                 consume();
                 column++;
-                continue;
+                continue mainLoop;
             }
             
             throw new LexicalAnalysisException("Unexpected token: " + c, 

@@ -24,6 +24,9 @@ import java.util.List;
 import me.rakinar2.litescript.ast.Location;
 import me.rakinar2.litescript.ast.SourceLocatable;
 import me.rakinar2.litescript.ast.nodes.AbstractNode;
+import me.rakinar2.litescript.ast.nodes.BinaryExpressionNode;
+import me.rakinar2.litescript.ast.nodes.BinaryOperator;
+import me.rakinar2.litescript.ast.nodes.EmptyStatementNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionStatementNode;
 import me.rakinar2.litescript.ast.nodes.LiteralExpressionNode;
@@ -37,11 +40,18 @@ import me.rakinar2.litescript.frontend.lexer.TokenType;
  * @author rakinar2
  */
 public class Parser {
+    private static List<Class<? extends AbstractNode>> NODES_WITHOUT_TRAILING_SEMICOLON = 
+        List.of(
+            EmptyStatementNode.class
+        );
+    
     private List<Token> tokens;
+    private boolean requireSemicolons = true;
     private int index = 0;
     
-    public Parser(List<Token> tokens) {
+    public Parser(List<Token> tokens, boolean requireSemicolons) {
         this.tokens = tokens;
+        this.requireSemicolons = requireSemicolons;
     }
     
     private boolean isEOF() {
@@ -133,13 +143,85 @@ public class Parser {
         return new LiteralExpressionNode(value, location);
     }
     
+    public ExpressionNode parseMultiplicativeBinaryExpression() {
+        ExpressionNode left = parsePrimaryExpression();
+        
+        while (!isEOF() && 
+                (peek().type == TokenType.TIMES || 
+                peek().type == TokenType.SLASH || 
+                peek().type == TokenType.MODULUS)) {
+            final Token operatorToken = 
+                    expect("Expected additive operator", 
+                            TokenType.TIMES, TokenType.SLASH, TokenType.MODULUS);
+        
+            final BinaryOperator operator = operatorToken.type == TokenType.TIMES
+                ? BinaryOperator.MULTIPLY
+                : operatorToken.type == TokenType.SLASH
+                ? BinaryOperator.DIVIDE
+                : BinaryOperator.MODULUS;
+            
+            final ExpressionNode right = parsePrimaryExpression();
+            left = new BinaryExpressionNode(left, right, operator, Location.combine(left, right));
+        }
+        
+        return left;
+    }
+    
+    public ExpressionNode parseAdditiveBinaryExpression() {
+        ExpressionNode left = parseMultiplicativeBinaryExpression();
+        
+        while (!isEOF() && (peek().type == TokenType.PLUS || peek().type == TokenType.MINUS)) {
+            final Token operatorToken = expect("Expected additive operator", TokenType.PLUS, TokenType.MINUS);
+            final BinaryOperator operator = operatorToken.type == TokenType.PLUS 
+                ? BinaryOperator.ADD
+                : BinaryOperator.SUBTRACT;
+            
+            final ExpressionNode right = parseMultiplicativeBinaryExpression();
+            left = new BinaryExpressionNode(left, right, operator, Location.combine(left, right));
+        }
+        
+        return left;
+    }
+    
+    public ExpressionNode parsePrimaryExpression() {        
+        return switch (peek().type) {
+            case TokenType.PAREN_OPEN -> {
+                expect(TokenType.PAREN_OPEN);
+                final var expression = parseExpression();
+                expect(TokenType.PAREN_CLOSE);
+                yield expression;
+            }
+            
+            case TokenType.INT_LITERAL, 
+                 TokenType.FLOAT_LITERAL, 
+                 TokenType.STRING_LITERAL,
+                 TokenType.BOOLEAN_TRUE,
+                 TokenType.BOOLEAN_FALSE,
+                 TokenType.NULL -> parseLiteralExpressionNode();
+        
+            default -> throw new ParserException("Unexpected token: " + peek().value, peek().location);
+        };
+    }
+    
     public ExpressionNode parseExpression() {
-        return parseLiteralExpressionNode();
+        return parseAdditiveBinaryExpression();
     }
     
     public StatementNode parseStatement() {
-        final ExpressionNode expression = parseExpression();
-        return new ExpressionStatementNode(expression, expression.location);
+        StatementNode statement = switch (peek().type) {
+            case TokenType.SEMICOLON -> new EmptyStatementNode(expect(TokenType.SEMICOLON).location);
+                
+            default -> {
+                final ExpressionNode expression = parseExpression();
+                yield new ExpressionStatementNode(expression, expression.location);
+            }
+        };
+        
+        if (requireSemicolons && !NODES_WITHOUT_TRAILING_SEMICOLON.contains(statement.getClass())) {
+            expect("Expected ';' at the end of statement", TokenType.SEMICOLON);
+        }
+        
+        return statement;
     }
     
     public RootNode parseAll() {

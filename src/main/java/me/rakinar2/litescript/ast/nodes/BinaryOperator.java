@@ -17,31 +17,27 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * 
  */
-package me.rakinar2.litescript.frontend.parser;
-
-import me.rakinar2.litescript.ast.Location;
-import me.rakinar2.litescript.frontend.SyntaxException;
+package me.rakinar2.litescript.ast.nodes;
 
 /**
- * Thrown due to syntax errors or parser issues.
- * 
+ *
  * @author rakinar2
  */
-public class ParserException extends SyntaxException {
-    private Location location;
+public enum BinaryOperator {
+    ADD("+"),
+    SUBTRACT("-"),
+    MULTIPLY("*"),
+    DIVIDE("/"),
+    MODULUS("%");
     
-    public ParserException(String message, Location location) {
-        super(message);
-        this.location = location;
+    private String operatorString;
+    
+    BinaryOperator(String operatorString) {
+        this.operatorString = operatorString;
     }
-    
-    public ParserException(String message, Location location, Throwable cause) {
-        super(message, cause);
-        this.location = location;
-    }
-    
+
     @Override
-    public Location getLocation() {
-        return location;
-    }
+    public String toString() {
+        return operatorString;
+    }    
 }

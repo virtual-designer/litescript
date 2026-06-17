@@ -17,31 +17,23 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * 
  */
-package me.rakinar2.litescript.frontend.parser;
+package me.rakinar2.litescript.frontend;
 
 import me.rakinar2.litescript.ast.Location;
-import me.rakinar2.litescript.frontend.SyntaxException;
 
 /**
- * Thrown due to syntax errors or parser issues.
+ * Base syntax exception interface.
  * 
  * @author rakinar2
  */
-public class ParserException extends SyntaxException {
-    private Location location;
+public abstract class SyntaxException extends RuntimeException {
+    public abstract Location getLocation();
     
-    public ParserException(String message, Location location) {
+    public SyntaxException(String message) {
         super(message);
-        this.location = location;
     }
     
-    public ParserException(String message, Location location, Throwable cause) {
+    public SyntaxException(String message, Throwable cause) {
         super(message, cause);
-        this.location = location;
-    }
-    
-    @Override
-    public Location getLocation() {
-        return location;
     }
 }

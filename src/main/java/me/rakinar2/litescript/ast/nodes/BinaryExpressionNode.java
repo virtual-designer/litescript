@@ -17,31 +17,30 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * 
  */
-package me.rakinar2.litescript.frontend.parser;
+package me.rakinar2.litescript.ast.nodes;
 
+import java.util.List;
 import me.rakinar2.litescript.ast.Location;
-import me.rakinar2.litescript.frontend.SyntaxException;
 
 /**
- * Thrown due to syntax errors or parser issues.
- * 
+ *
  * @author rakinar2
  */
-public class ParserException extends SyntaxException {
-    private Location location;
+public class BinaryExpressionNode extends ExpressionNode {
+    public final ExpressionNode left;
+    public final ExpressionNode right;
+    public final BinaryOperator operator;
     
-    public ParserException(String message, Location location) {
-        super(message);
-        this.location = location;
+    public BinaryExpressionNode(ExpressionNode left, ExpressionNode right, 
+            BinaryOperator operator, Location location) {
+        super(location);
+        this.left = left;
+        this.right = right;
+        this.operator = operator;
     }
-    
-    public ParserException(String message, Location location, Throwable cause) {
-        super(message, cause);
-        this.location = location;
-    }
-    
+
     @Override
-    public Location getLocation() {
-        return location;
-    }
+    public Iterable<AbstractNode> getBranches() {
+        return List.of(left, right);
+    }    
 }

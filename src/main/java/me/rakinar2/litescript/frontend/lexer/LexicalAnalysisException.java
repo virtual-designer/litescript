@@ -20,14 +20,15 @@
 package me.rakinar2.litescript.frontend.lexer;
 
 import me.rakinar2.litescript.ast.Location;
+import me.rakinar2.litescript.frontend.SyntaxException;
 
 /**
  * Thrown due to lexical analysis or token generation issues.
  * 
  * @author rakinar2
  */
-public class LexicalAnalysisException extends Exception {
-    public final Location location;
+public class LexicalAnalysisException extends SyntaxException {
+    private Location location;
     
     public LexicalAnalysisException(String message, Location location) {
         super(message);
@@ -38,4 +39,9 @@ public class LexicalAnalysisException extends Exception {
         super(message, cause);
         this.location = location;
     }
+
+    @Override
+    public Location getLocation() {
+        return location;
+    } 
 }
