@@ -19,11 +19,14 @@
  */
 package me.rakinar2.litescript.interpreter;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import me.rakinar2.litescript.ast.Location;
 import me.rakinar2.litescript.ast.nodes.AbstractNode;
 import me.rakinar2.litescript.ast.nodes.AssignmentExpressionNode;
 import me.rakinar2.litescript.ast.nodes.BinaryExpressionNode;
-import me.rakinar2.litescript.ast.nodes.BinaryOperator;
+import me.rakinar2.litescript.ast.nodes.CallExpressionNode;
 import me.rakinar2.litescript.ast.nodes.EmptyStatementNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionStatementNode;
@@ -32,6 +35,7 @@ import me.rakinar2.litescript.ast.nodes.LiteralExpressionNode;
 import me.rakinar2.litescript.ast.nodes.RootNode;
 import me.rakinar2.litescript.ast.nodes.StatementNode;
 import me.rakinar2.litescript.ast.nodes.VariableDeclarationNode;
+import me.rakinar2.litescript.stdlib.Loader;
 
 /**
  * Main interpreter execution unit.
@@ -40,9 +44,12 @@ import me.rakinar2.litescript.ast.nodes.VariableDeclarationNode;
  */
 public class Interpreter {
     private PrimitiveOperationUnit primitiveOperationUnit = new PrimitiveOperationUnit();
+    private Loader loader = new Loader();
     
     public ExecutionContext createDefaultContext() {
-        return ExecutionContext.create().setScope(Scope.createGlobal());
+        Scope scope = Scope.createGlobal();
+        loader.load(scope);
+        return ExecutionContext.create().setScope(scope);
     }
     
     public RuntimeValue interpret(AbstractNode sourceNode) {
@@ -104,7 +111,7 @@ public class Interpreter {
     public RuntimeValue interpretRoot(RootNode sourceNode, ExecutionContext context) {
         RuntimeValue value = RuntimeValue.NullValue.getInstance();
         
-        for (var childNode : sourceNode.statements) {
+        for (final var childNode : sourceNode.statements) {
             if (childNode instanceof EmptyStatementNode) {
                 continue;
             }
@@ -132,7 +139,60 @@ public class Interpreter {
             return interpretAssignmentExpression(node, context);
         }
         
+        if (sourceNode instanceof CallExpressionNode node) {
+            return interpretCallExpression(node, context);
+        }
+        
         throw new InterpreterRuntimeException("Unable to interpret node", 
+                sourceNode.getLocation());
+    }
+    
+    private RuntimeValue interpretCallExpression(CallExpressionNode sourceNode, ExecutionContext context) {
+        final RuntimeValue callee = interpretExpression(sourceNode.callee, context);
+        final List<RuntimeValue> arguments = 
+            sourceNode.arguments
+                .stream()
+                .map(arg -> interpretExpression(arg, context))
+                .collect(Collectors.toList());
+        
+        
+        if (callee instanceof RuntimeValue.FunctionValue fn) {
+            int minArgumentCount = Math.max(fn.parameters.size() == 0 ? Integer.MIN_VALUE : fn.parameters.size(), fn.getMinArgumentCount());
+            int maxArgumentCount = Math.min(fn.parameters.size() == 0 ? Integer.MAX_VALUE : fn.parameters.size(), fn.getMaxArgumentCount());
+
+            if (arguments.size() < minArgumentCount) {
+                throw new InterpreterRuntimeException(
+                    String.format("Cannot call this function without at least %d arguments", minArgumentCount), 
+                    sourceNode.getLocation());
+            }
+
+            if (arguments.size() > maxArgumentCount) {
+                throw new InterpreterRuntimeException(
+                    String.format("Cannot call this function with more than %d arguments", maxArgumentCount), 
+                    sourceNode.getLocation());
+            }
+
+            if (fn.isBuiltin()) {
+                try {
+                    Object[] argv = arguments.toArray(new RuntimeValue[0]);
+                    Object ret = fn.isVariadic() ? fn.method.invoke(fn.instance, (Object) argv) : fn.method.invoke(fn.instance, argv);
+                    
+                    if (ret instanceof RuntimeValue v) {
+                        return v;
+                    }
+                    
+                    throw new RuntimeException("Built-in function did not return a RuntimeValue instance");
+                }
+                catch (Exception exception) {
+                    throw new RuntimeException(exception);
+                }
+            }
+            
+            throw new InterpreterRuntimeException("User-defined function calls are not supported yet", 
+                sourceNode.getLocation());
+        }
+        
+        throw new InterpreterRuntimeException("Cannot call a non-function value", 
                 sourceNode.getLocation());
     }
     

@@ -62,17 +62,25 @@ public class PrimitiveOperationUnit {
             RuntimeValue.StringValue strLeft;
             RuntimeValue.StringValue strRight;
             
-            if (left instanceof RuntimeValue.StringValue s) {
-                strLeft = s;
-                strRight = RuntimeValue.convertValueToString(right);
+            try {
+                if (left instanceof RuntimeValue.StringValue s) {
+                    strLeft = s;
+                    strRight = RuntimeValue.convertValueToString(right);
+                }
+                else {
+                    strLeft = RuntimeValue.convertValueToString(left);
+                    strRight = (RuntimeValue.StringValue) right;
+                }
+
+                final RuntimeValue.StringValue result = new RuntimeValue.StringValue(strLeft.value + strRight.value);
+                return result;
             }
-            else {
-                strLeft = RuntimeValue.convertValueToString(left);
-                strRight = (RuntimeValue.StringValue) right;
+            catch (Exception exception) {
+                throw new InterpreterRuntimeException(
+                    String.format("Failed to apply operator '%s' on operands of type '%s' and '%s': %s", 
+                    BinaryOperator.ADD, RuntimeValue.getTypeOf(left), RuntimeValue.getTypeOf(right), exception.getMessage()), 
+                    sourceNode.getLocation());
             }
-            
-            final RuntimeValue.StringValue result = new RuntimeValue.StringValue(strLeft.value + strRight.value);
-            return result;
         }
         
         final var result = commonBinaryOperationHandler(left, right, 

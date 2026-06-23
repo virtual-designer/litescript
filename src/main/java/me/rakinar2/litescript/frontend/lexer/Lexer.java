@@ -48,6 +48,7 @@ public class Lexer {
             Map.entry(']', TokenType.BRACKET_CLOSE),
             Map.entry(';', TokenType.SEMICOLON),
             Map.entry('.', TokenType.DOT),
+            Map.entry(',', TokenType.COMMA),
             Map.entry('=', TokenType.EQUAL)
         );
     

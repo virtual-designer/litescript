@@ -17,37 +17,19 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * 
  */
-package me.rakinar2.litescript.frontend.lexer;
+package me.rakinar2.litescript.stdlib;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * All possible token types.
- * 
+ *
  * @author rakinar2
  */
-public enum TokenType {
-    EOF,
-    IDENTIFIER,
-    INT_LITERAL,
-    FLOAT_LITERAL,
-    STRING_LITERAL,
-    BOOLEAN_TRUE,
-    BOOLEAN_FALSE,
-    NULL,
-    PLUS,
-    MINUS,
-    TIMES,
-    SLASH,
-    MODULUS,
-    PAREN_OPEN,
-    PAREN_CLOSE,
-    BRACE_OPEN,
-    BRACE_CLOSE,
-    BRACKET_OPEN,
-    BRACKET_CLOSE,
-    SEMICOLON,
-    DOT,
-    FINAL,
-    LET,
-    EQUAL,
-    COMMA,
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Export {
+    
 }

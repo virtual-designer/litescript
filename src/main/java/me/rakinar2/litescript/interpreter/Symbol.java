@@ -57,7 +57,8 @@ public class Symbol {
         return value;
     }
 
-    public void setValue(RuntimeValue value) {
+    public Symbol setValue(RuntimeValue value) {
         this.value = value;
+        return this;
     }
 }

@@ -60,6 +60,10 @@ public class ValueFormatter {
             return format(booleanValue.value);
         }
         
+        if (value instanceof RuntimeValue.FunctionValue functionValue) {
+            return String.format("[Function: %s]", functionValue.name);
+        }
+        
         if (value instanceof RuntimeValue.NullValue) {
             return formatNull();
         }

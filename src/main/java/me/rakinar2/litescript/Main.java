@@ -41,7 +41,7 @@ public class Main {
 
                 try {
                     RuntimeValue value = executeLine(line);
-                    System.out.println(ValueFormatter.format(value));
+                    System.out.format("\033[2m>\033[0m %s\n", ValueFormatter.format(value));
                 }
                 catch (SyntaxException exception) {
                     System.err.format("%s:%d:%d: syntax error: %s\n", 

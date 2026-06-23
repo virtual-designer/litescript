@@ -27,6 +27,7 @@ import me.rakinar2.litescript.ast.nodes.AbstractNode;
 import me.rakinar2.litescript.ast.nodes.AssignmentExpressionNode;
 import me.rakinar2.litescript.ast.nodes.BinaryExpressionNode;
 import me.rakinar2.litescript.ast.nodes.BinaryOperator;
+import me.rakinar2.litescript.ast.nodes.CallExpressionNode;
 import me.rakinar2.litescript.ast.nodes.EmptyStatementNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionStatementNode;
@@ -43,12 +44,12 @@ import me.rakinar2.litescript.frontend.lexer.TokenType;
  * @author rakinar2
  */
 public class Parser {
-    private static List<Class<? extends AbstractNode>> NODES_WITHOUT_TRAILING_SEMICOLON = 
+    private static final List<Class<? extends AbstractNode>> NODES_WITHOUT_TRAILING_SEMICOLON = 
         List.of(
             EmptyStatementNode.class
         );
     
-    private List<Token> tokens;
+    private final List<Token> tokens;
     private boolean requireSemicolons = true;
     private int index = 0;
     
@@ -147,7 +148,7 @@ public class Parser {
     }
     
     public ExpressionNode parseMultiplicativeBinaryExpression() {
-        ExpressionNode left = parsePrimaryExpression();
+        ExpressionNode left = parseCallExpressionNode();
         
         while (!isEOF() && 
                 (peek().type == TokenType.TIMES || 
@@ -163,7 +164,7 @@ public class Parser {
                 ? BinaryOperator.DIVIDE
                 : BinaryOperator.MODULUS;
             
-            final ExpressionNode right = parsePrimaryExpression();
+            final ExpressionNode right = parseCallExpressionNode();
             left = new BinaryExpressionNode(left, right, operator, Location.combine(left, right));
         }
         
@@ -189,6 +190,33 @@ public class Parser {
     public IdentifierNode parseIdentifierNode() {
         final Token identifierToken = expect(TokenType.IDENTIFIER);
         return new IdentifierNode(identifierToken.value, identifierToken.location);
+    }
+    
+    public ExpressionNode parseCallExpressionNode() {
+        ExpressionNode callee = parsePrimaryExpression();
+        
+        if (!isEOF() && peek().type == TokenType.PAREN_OPEN) {
+            expect(TokenType.PAREN_OPEN);
+            
+            List<ExpressionNode> arguments = new LinkedList<>();
+            ExpressionNode lastArg = null;
+            
+            while (!isEOF() && peek().type != TokenType.PAREN_CLOSE) {
+                lastArg = parseExpression();
+                arguments.add(lastArg);
+                
+                if ((!isEOF() && peek().type != TokenType.PAREN_CLOSE)
+                    || (peek(1) != null && peek().type == TokenType.COMMA 
+                        && peek(1).type == TokenType.PAREN_CLOSE)) {
+                    expect(TokenType.COMMA);
+                }
+            }
+            
+            expect(TokenType.PAREN_CLOSE);
+            return new CallExpressionNode(callee, arguments, Location.combine(callee, lastArg));
+        }
+        
+        return callee;
     }
     
     public ExpressionNode parsePrimaryExpression() {        
@@ -255,7 +283,7 @@ public class Parser {
         StatementNode statement = switch (peek().type) {
             case SEMICOLON -> new EmptyStatementNode(expect(TokenType.SEMICOLON).location);
             case LET, FINAL -> parseVariableDeclaration();
-                
+            
             default -> {
                 final ExpressionNode expression = parseExpression();
                 yield new ExpressionStatementNode(expression, expression.location);

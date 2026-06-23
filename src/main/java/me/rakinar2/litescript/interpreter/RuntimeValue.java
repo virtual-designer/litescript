@@ -19,6 +19,10 @@
  */
 package me.rakinar2.litescript.interpreter;
 
+import java.lang.reflect.Method;
+import java.util.List;
+import me.rakinar2.litescript.ast.nodes.AbstractNode;
+
 /**
  *
  * @author rakinar2
@@ -80,6 +84,76 @@ public abstract sealed class RuntimeValue {
         }
     }
     
+    public static final class FunctionValue extends RuntimeValue {
+        public final String name;
+        public final List<AbstractNode> body;
+        public final List<String> parameters;
+        public final Object instance;
+        public final Method method;
+        
+        private int minArgumentCount;
+        private int maxArgumentCount;
+        private boolean variadic = false;
+        private boolean builtin = false;
+        
+        
+        public FunctionValue(String name, List<String> parameters, List<AbstractNode> body) {
+            this.name = name;
+            this.parameters = parameters;
+            this.body = body;
+            this.instance = null;
+            this.method = null;
+        }
+
+        
+        public FunctionValue(String name, List<String> parameters, Object instance, Method method) {
+            this.name = name;
+            this.parameters = parameters;
+            this.body = null;
+            this.instance = instance;
+            this.method = method;
+            this.minArgumentCount = minArgumentCount;
+            this.maxArgumentCount = maxArgumentCount;
+        }
+
+        public int getMinArgumentCount() {
+            return minArgumentCount;
+        }
+
+        public int getMaxArgumentCount() {
+            return maxArgumentCount;
+        }
+
+        public boolean isVariadic() {
+            return variadic;
+        }
+                
+        public boolean isBuiltin() {
+            return builtin;
+        }
+
+        public void setMinArgumentCount(int minArgumentCount) {
+            this.minArgumentCount = minArgumentCount;
+        }
+
+        public void setMaxArgumentCount(int maxArgumentCount) {
+            this.maxArgumentCount = maxArgumentCount;
+        }
+
+        public void setVariadic(boolean variadic) {
+            this.variadic = variadic;
+        }
+        
+        public void setBuiltin(boolean builtin) {
+            this.builtin = builtin;
+        }
+        
+        @Override
+        public String toPrettyString() {
+            return String.format("[Function %s]", name == null ? "(anonymous)" : name);
+        }
+    }
+    
     public static final class NullValue extends RuntimeValue {
         private static NullValue instance = null;
         
@@ -116,6 +190,10 @@ public abstract sealed class RuntimeValue {
         
         if (value instanceof BooleanValue) {
             return "Boolean";
+        }
+        
+        if (value instanceof FunctionValue) {
+            return "Function";
         }
         
         if (value instanceof NullValue) {
@@ -158,6 +236,6 @@ public abstract sealed class RuntimeValue {
             return new StringValue("null");
         }
         
-        throw new IllegalStateException("Invalid literal");
+        throw new IllegalStateException(String.format("Cannot convert '%s' to String", getTypeOf(value)));
     }
 }
