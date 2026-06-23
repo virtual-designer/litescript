@@ -19,8 +19,6 @@
  */
 package me.rakinar2.litescript.interpreter;
 
-import java.lang.String;
-
 /**
  *
  * @author rakinar2
@@ -99,5 +97,47 @@ public abstract sealed class RuntimeValue {
             
             return instance;
         }
+    }
+    
+    public static String getTypeOf(RuntimeValue value) {
+         return switch (value) {
+            case IntValue _ -> "Int";
+            case FloatValue _ -> "Float";
+            case BooleanValue _ -> "Boolean";
+            case StringValue _ -> "String";
+            case NullValue _ -> "Null";
+                
+            default ->
+                throw new IllegalStateException("Invalid literal");
+        };
+    }
+    
+    public static FloatValue convertValueToFloat(RuntimeValue value) {
+        return switch (value) {
+            case FloatValue floatValue -> floatValue;
+            case IntValue intValue -> new FloatValue((double) intValue.value);
+            default -> 
+                throw new IllegalStateException(String.format("Cannot convert '%s' to Float", getTypeOf(value)));
+        };
+    }
+    
+    public static StringValue convertValueToString(RuntimeValue value) {
+        return switch (value) {
+            case IntValue intValue ->
+                new StringValue(Long.toString(intValue.value));
+                
+            case FloatValue floatValue ->
+                new StringValue(ValueFormatter.DECIMAL_FORMATTER.format(floatValue.value));
+                
+            case BooleanValue booleanValue ->
+                new StringValue(booleanValue.value ? "true" : "false");
+                
+            case StringValue stringValue -> stringValue;
+                
+            case NullValue _ -> new StringValue("null");
+                
+            default ->
+                throw new IllegalStateException("Invalid literal");
+        };
     }
 }
