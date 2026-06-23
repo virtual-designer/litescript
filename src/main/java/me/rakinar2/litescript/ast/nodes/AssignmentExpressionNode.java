@@ -17,36 +17,27 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * 
  */
-package me.rakinar2.litescript.frontend.lexer;
+package me.rakinar2.litescript.ast.nodes;
+
+import java.util.List;
+import me.rakinar2.litescript.ast.Location;
 
 /**
- * All possible token types.
- * 
+ *
  * @author rakinar2
  */
-public enum TokenType {
-    EOF,
-    IDENTIFIER,
-    INT_LITERAL,
-    FLOAT_LITERAL,
-    STRING_LITERAL,
-    BOOLEAN_TRUE,
-    BOOLEAN_FALSE,
-    NULL,
-    PLUS,
-    MINUS,
-    TIMES,
-    SLASH,
-    MODULUS,
-    PAREN_OPEN,
-    PAREN_CLOSE,
-    BRACE_OPEN,
-    BRACE_CLOSE,
-    BRACKET_OPEN,
-    BRACKET_CLOSE,
-    SEMICOLON,
-    DOT,
-    FINAL,
-    LET,
-    EQUAL,
+public class AssignmentExpressionNode extends ExpressionNode {
+    public final ExpressionNode left;
+    public final ExpressionNode right;
+    
+    public AssignmentExpressionNode(ExpressionNode left, ExpressionNode right, Location location) {
+        super(location);
+        this.left = left;
+        this.right = right;
+    }
+    
+    @Override
+    public Iterable<AbstractNode> getBranches() {
+        return List.of(left, right);
+    }
 }

@@ -24,14 +24,17 @@ import java.util.List;
 import me.rakinar2.litescript.ast.Location;
 import me.rakinar2.litescript.ast.SourceLocatable;
 import me.rakinar2.litescript.ast.nodes.AbstractNode;
+import me.rakinar2.litescript.ast.nodes.AssignmentExpressionNode;
 import me.rakinar2.litescript.ast.nodes.BinaryExpressionNode;
 import me.rakinar2.litescript.ast.nodes.BinaryOperator;
 import me.rakinar2.litescript.ast.nodes.EmptyStatementNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionStatementNode;
+import me.rakinar2.litescript.ast.nodes.IdentifierNode;
 import me.rakinar2.litescript.ast.nodes.LiteralExpressionNode;
 import me.rakinar2.litescript.ast.nodes.RootNode;
 import me.rakinar2.litescript.ast.nodes.StatementNode;
+import me.rakinar2.litescript.ast.nodes.VariableDeclarationNode;
 import me.rakinar2.litescript.frontend.lexer.Token;
 import me.rakinar2.litescript.frontend.lexer.TokenType;
 
@@ -183,6 +186,11 @@ public class Parser {
         return left;
     }
     
+    public IdentifierNode parseIdentifierNode() {
+        final Token identifierToken = expect(TokenType.IDENTIFIER);
+        return new IdentifierNode(identifierToken.value, identifierToken.location);
+    }
+    
     public ExpressionNode parsePrimaryExpression() {        
         return switch (peek().type) {
             case TokenType.PAREN_OPEN -> {
@@ -198,18 +206,55 @@ public class Parser {
                  TokenType.BOOLEAN_TRUE,
                  TokenType.BOOLEAN_FALSE,
                  TokenType.NULL -> parseLiteralExpressionNode();
+                
+            case TokenType.IDENTIFIER ->
+                parseIdentifierNode();
         
             default -> throw new ParserException("Unexpected token: " + peek().value, peek().location);
         };
     }
     
-    public ExpressionNode parseExpression() {
+    public ExpressionNode parseAssignmentExpression() {
+        Token peekToken = peek(1);
+        
+        if (peekToken != null && peekToken.type == TokenType.EQUAL) {
+            ExpressionNode left = parseIdentifierNode();
+            expect(TokenType.EQUAL);
+            ExpressionNode right = parseExpression();
+            return new AssignmentExpressionNode(left, right, Location.combine(left, right));
+        }
+        
         return parseAdditiveBinaryExpression();
+    }
+    
+    public ExpressionNode parseExpression() {
+        return parseAssignmentExpression();
+    }
+    
+    public VariableDeclarationNode parseVariableDeclaration() {
+        final Token token = expect(TokenType.LET, TokenType.FINAL);
+        final IdentifierNode identifier = parseIdentifierNode();
+        ExpressionNode value = null;
+        
+        if (!isEOF() && peek().type == TokenType.EQUAL) {
+            consume();
+            value = parseExpression();
+        }
+        
+        return new VariableDeclarationNode(
+            token.type == TokenType.FINAL 
+                    ? VariableDeclarationNode.Kind.FINAL 
+                    : VariableDeclarationNode.Kind.LET, 
+            identifier, 
+            value,
+            Location.combine(token, identifier, value)
+        );
     }
     
     public StatementNode parseStatement() {
         StatementNode statement = switch (peek().type) {
-            case TokenType.SEMICOLON -> new EmptyStatementNode(expect(TokenType.SEMICOLON).location);
+            case SEMICOLON -> new EmptyStatementNode(expect(TokenType.SEMICOLON).location);
+            case LET, FINAL -> parseVariableDeclaration();
                 
             default -> {
                 final ExpressionNode expression = parseExpression();

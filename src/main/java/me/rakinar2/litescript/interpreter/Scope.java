@@ -74,4 +74,8 @@ public class Scope {
         
         return globalScope;
     }
+    
+    public Scope createChild() {
+        return new Scope(this);
+    }
 }

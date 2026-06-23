@@ -3,8 +3,6 @@ package me.rakinar2.litescript;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.List;
-import me.rakinar2.litescript.ast.nodes.ExpressionNode;
-import me.rakinar2.litescript.ast.nodes.ExpressionStatementNode;
 import me.rakinar2.litescript.ast.nodes.RootNode;
 import me.rakinar2.litescript.frontend.lexer.Lexer;
 import me.rakinar2.litescript.frontend.lexer.Token;

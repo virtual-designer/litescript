@@ -29,10 +29,16 @@ import me.rakinar2.litescript.ast.nodes.AbstractNode;
 public class Symbol {
     private String name;
     private AbstractNode sourceNode;
+    private RuntimeValue value = null;
     
     public Symbol(String name, AbstractNode sourceNode) {
         this.name = name;
         this.sourceNode = sourceNode;
+    }
+    
+    public Symbol(String name, AbstractNode sourceNode, RuntimeValue value) {
+        this(name, sourceNode);
+        this.value = value;
     }
     
     public AbstractNode getSourceNode() {
@@ -45,5 +51,13 @@ public class Symbol {
     
     public String getName() {
         return name;
+    }
+
+    public RuntimeValue getValue() {
+        return value;
+    }
+
+    public void setValue(RuntimeValue value) {
+        this.value = value;
     }
 }

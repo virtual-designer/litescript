@@ -38,6 +38,10 @@ public record Location(String fileName, long lineStart, long columnStart,
         for (SourceLocatable locatable : locations) {
             final Location location = locatable.getLocation();
             
+            if (location == null) {
+                continue;
+            }
+            
             if (location.lineStart < lineStart || 
                 (location.lineStart == lineStart && 
                 location.columnStart < columnStart)) {

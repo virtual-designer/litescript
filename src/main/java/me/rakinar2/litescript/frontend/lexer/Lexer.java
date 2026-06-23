@@ -47,14 +47,17 @@ public class Lexer {
             Map.entry('[', TokenType.BRACKET_OPEN),
             Map.entry(']', TokenType.BRACKET_CLOSE),
             Map.entry(';', TokenType.SEMICOLON),
-            Map.entry('.', TokenType.DOT)
+            Map.entry('.', TokenType.DOT),
+            Map.entry('=', TokenType.EQUAL)
         );
     
     private static Map<String, TokenType> KEYWORD_TOKENS = 
         Map.ofEntries(
             Map.entry("true", TokenType.BOOLEAN_TRUE),
             Map.entry("false", TokenType.BOOLEAN_FALSE),
-            Map.entry("null", TokenType.NULL)
+            Map.entry("null", TokenType.NULL),
+            Map.entry("final", TokenType.FINAL),
+            Map.entry("let", TokenType.LET)
         );
     
     private String fileName;
@@ -102,8 +105,8 @@ public class Lexer {
     
     private char peek(int offset) throws LexicalAnalysisException {
         try {
-        char c = getCurrentInputString().charAt(index + offset);
-        return c;
+            char c = getCurrentInputString().charAt(index + offset);
+            return c;
         }
         catch (IndexOutOfBoundsException exception) {
             throw new LexicalAnalysisException("Unexpected end of file", 
@@ -124,21 +127,26 @@ public class Lexer {
     }
     
     private boolean lexSpace(@SuppressWarnings("unused") List<Token> _tokens) throws LexicalAnalysisException {
-        char c = peek();
         boolean trimmed = false;
         
-        while (c == '\t' || c == ' ' || c == '\r' || c == '\n') {
-            if (c == '\n') {
-                column = 1;
-                line++;
-            }
-            else {
-                column++;
-            }
+        while (!isInputExhausted()) {
+            char c = peek();
+            
+            if (c == '\t' || c == ' ' || c == '\r' || c == '\n') {
+                if (c == '\n') {
+                    column = 1;
+                    line++;
+                }
+                else {
+                    column++;
+                }
 
-            consume();
-            c = peek();
-            trimmed = true;
+                consume();
+                trimmed = true;
+                continue;
+            }
+            
+            break;
         }
         
         return trimmed;

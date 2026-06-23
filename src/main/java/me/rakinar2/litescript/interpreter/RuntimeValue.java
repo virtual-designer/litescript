@@ -24,6 +24,8 @@ package me.rakinar2.litescript.interpreter;
  * @author rakinar2
  */
 public abstract sealed class RuntimeValue {
+    public static final NullValue NULL = NullValue.getInstance();
+    
     public abstract String toPrettyString();
     
     public static final class IntValue extends RuntimeValue {
