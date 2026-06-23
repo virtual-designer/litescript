@@ -5,6 +5,7 @@
     <property name="build.dir" value="build" />
     <property name="build.dir.classes.java" value="${build.dir}/classes/main/java" />
     <property name="project.mainclass" value="me.rakinar2.litescript.Main" />
+    <property name="java.target.version" value="17" />
     
     <!-- Targets -->
     
@@ -15,9 +16,8 @@
     <target name="build" description="Builds the project" depends="compile" />
     <target name="compile" description="Compiles the project">
         <mkdir dir="${build.dir.classes.java}/classes/main/java" />
-        <javac srcdir="src/main/java" destdir="${build.dir.classes.java}" 
-               source="26" 
-               target="26" 
+        <javac srcdir="src/main/java" destdir="${build.dir.classes.java}"
+               release="${java.target.version}"
                includeantruntime="false" />
     </target>
     

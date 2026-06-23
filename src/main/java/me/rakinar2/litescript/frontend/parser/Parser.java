@@ -118,24 +118,24 @@ public class Parser {
         LiteralExpressionNode.LiteralValue value;
         
         switch (token.type) {
-            case TokenType.INT_LITERAL:
+            case INT_LITERAL:
                 value = new LiteralExpressionNode.LiteralValue.Int(Long.parseLong(token.value));
                 break;
                 
-            case TokenType.FLOAT_LITERAL:
+            case FLOAT_LITERAL:
                 value = new LiteralExpressionNode.LiteralValue.Float(Double.parseDouble(token.value));
                 break;
                 
-            case TokenType.BOOLEAN_TRUE:
-            case TokenType.BOOLEAN_FALSE:
+            case BOOLEAN_TRUE:
+            case BOOLEAN_FALSE:
                 value = new LiteralExpressionNode.LiteralValue.Boolean(token.type == TokenType.BOOLEAN_TRUE);
                 break;
                 
-            case TokenType.STRING_LITERAL:
+            case STRING_LITERAL:
                 value = new LiteralExpressionNode.LiteralValue.String(token.value);
                 break;
                 
-            case TokenType.NULL:
+            case NULL:
                 value = LiteralExpressionNode.LiteralValue.NULL_VALUE;
                 break;
                 
@@ -193,21 +193,21 @@ public class Parser {
     
     public ExpressionNode parsePrimaryExpression() {        
         return switch (peek().type) {
-            case TokenType.PAREN_OPEN -> {
+            case PAREN_OPEN -> {
                 expect(TokenType.PAREN_OPEN);
                 final var expression = parseExpression();
                 expect(TokenType.PAREN_CLOSE);
                 yield expression;
             }
             
-            case TokenType.INT_LITERAL, 
-                 TokenType.FLOAT_LITERAL, 
-                 TokenType.STRING_LITERAL,
-                 TokenType.BOOLEAN_TRUE,
-                 TokenType.BOOLEAN_FALSE,
-                 TokenType.NULL -> parseLiteralExpressionNode();
+            case INT_LITERAL, 
+                 FLOAT_LITERAL, 
+                 STRING_LITERAL,
+                 BOOLEAN_TRUE,
+                 BOOLEAN_FALSE,
+                 NULL -> parseLiteralExpressionNode();
                 
-            case TokenType.IDENTIFIER ->
+            case IDENTIFIER ->
                 parseIdentifierNode();
         
             default -> throw new ParserException("Unexpected token: " + peek().value, peek().location);

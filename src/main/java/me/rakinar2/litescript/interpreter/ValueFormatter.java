@@ -43,25 +43,28 @@ public class ValueFormatter {
         return System.console() != null;
     }
     
-    public static String format(RuntimeValue runtimeValue) {        
-        return switch (runtimeValue) {
-            case RuntimeValue.IntValue intValue ->
-                format(intValue.value);
-            
-            case RuntimeValue.BooleanValue booleanValue -> 
-               format(booleanValue.value);
-                
-            case RuntimeValue.FloatValue floatValue ->
-                format(floatValue.value);
-                
-            case RuntimeValue.StringValue stringValue ->
-                format(stringValue.value);
-                
-            case RuntimeValue.NullValue _ -> 
-                formatNull();
-                
-            default -> throw new IllegalStateException("Invalid value");
-        };
+    public static String format(RuntimeValue value) {
+        if (value instanceof RuntimeValue.IntValue intValue) {
+            return format(intValue.value);
+        }
+        
+        if (value instanceof RuntimeValue.FloatValue floatValue) {
+            return format(floatValue.value);
+        }
+        
+        if (value instanceof RuntimeValue.StringValue stringValue) {
+            return format(stringValue.value);
+        }
+        
+        if (value instanceof RuntimeValue.BooleanValue booleanValue) {
+            return format(booleanValue.value);
+        }
+        
+        if (value instanceof RuntimeValue.NullValue) {
+            return formatNull();
+        }
+        
+        throw new IllegalStateException("Invalid value");
     }
     
     private static String format(long value) {

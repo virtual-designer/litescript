@@ -23,7 +23,7 @@ public class Main {
     private static final Interpreter interpreter = new Interpreter();
     private static final ExecutionContext context = interpreter.createDefaultContext();
             
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception {        
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
             for (;;) {
                 System.out.print("\033[1;34m[litescript:repl]$\033[0m ");

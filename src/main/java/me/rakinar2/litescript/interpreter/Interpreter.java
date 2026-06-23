@@ -51,38 +51,37 @@ public class Interpreter {
     }
     
     public RuntimeValue interpret(AbstractNode sourceNode, ExecutionContext context) {
-        return switch (sourceNode) {
-            case ExpressionNode expression ->
-                interpretExpression(expression, context);
-                
-            case StatementNode statement ->
-                 interpretStatement(statement, context);
-                
-            default ->
-                throw new InterpreterRuntimeException("Unable to interpret node", 
-                        sourceNode.getLocation());
-        };
+        if (sourceNode instanceof ExpressionNode expression) {
+            return interpretExpression(expression, context);
+        }
+        
+        if (sourceNode instanceof StatementNode statement) {
+            return interpretStatement(statement, context);
+        }
+        
+        throw new InterpreterRuntimeException("Unable to interpret node", 
+                sourceNode.getLocation());
     }
     
     public RuntimeValue interpretStatement(StatementNode sourceNode, ExecutionContext context) {
-        RuntimeValue value = switch (sourceNode) {                
-            case ExpressionStatementNode expressionStatement ->
-                interpretExpression(expressionStatement.expression, context);
-                
-            case RootNode rootNode ->
-                interpretRoot(rootNode, context);
-                
-            case VariableDeclarationNode node ->
-                interpretVariableDeclaration(node, context);
-                
-            case EmptyStatementNode _ -> RuntimeValue.NullValue.getInstance();
-            
-            default ->
-                throw new InterpreterRuntimeException("Unable to interpret node", 
-                        sourceNode.getLocation());
-        };
+        if (sourceNode instanceof ExpressionStatementNode expressionStatement) {
+            return interpretExpression(expressionStatement.expression, context);
+        }
         
-        return value;
+        if (sourceNode instanceof RootNode rootNode) {
+            return interpretRoot(rootNode, context);
+        }
+        
+        if (sourceNode instanceof VariableDeclarationNode node) {
+            return interpretVariableDeclaration(node, context);
+        }
+        
+        if (sourceNode instanceof EmptyStatementNode) {
+            return RuntimeValue.NULL;
+        }
+        
+        throw new InterpreterRuntimeException("Unable to interpret node", 
+                sourceNode.getLocation());
     }
     
     private RuntimeValue interpretVariableDeclaration(VariableDeclarationNode sourceNode, ExecutionContext context) {
@@ -117,23 +116,24 @@ public class Interpreter {
     }
     
     public RuntimeValue interpretExpression(ExpressionNode sourceNode, ExecutionContext context) {
-        return switch (sourceNode) {
-            case LiteralExpressionNode literal ->
-                interpretLiteralExpression(literal, context);
-                
-            case BinaryExpressionNode expression ->
-                interpretBinaryExpression(expression, context);
-                
-            case IdentifierNode identifier ->
-                interpretIdentifier(identifier, context);
-                
-            case AssignmentExpressionNode node ->
-                interpretAssignmentExpression(node, context);
-            
-            default ->
-                throw new InterpreterRuntimeException("Unable to interpret node", 
-                        sourceNode.getLocation());
-        };
+        if (sourceNode instanceof LiteralExpressionNode literal) {
+            return interpretLiteralExpression(literal, context);
+        }
+        
+        if (sourceNode instanceof BinaryExpressionNode expression) {
+            return interpretBinaryExpression(expression, context);
+        }
+        
+        if (sourceNode instanceof IdentifierNode identifier) {
+            return interpretIdentifier(identifier, context);
+        }
+        
+        if (sourceNode instanceof AssignmentExpressionNode node) {
+            return interpretAssignmentExpression(node, context);
+        }
+        
+        throw new InterpreterRuntimeException("Unable to interpret node", 
+                sourceNode.getLocation());
     }
     
     private RuntimeValue interpretAssignmentExpression(AssignmentExpressionNode sourceNode, ExecutionContext context) {
@@ -183,44 +183,50 @@ public class Interpreter {
         RuntimeValue left = interpretExpression(sourceNode.left, context);
         RuntimeValue right = interpretExpression(sourceNode.right, context);
         
-        return switch (sourceNode.operator) {
-            case BinaryOperator.ADD -> 
-                primitiveOperationUnit.computeBinaryAdd(sourceNode, left, right);
-            case BinaryOperator.SUBTRACT -> 
-                primitiveOperationUnit.computeBinarySubtract(sourceNode, left, right);
-            case BinaryOperator.MULTIPLY -> 
-                primitiveOperationUnit.computeBinaryMultiply(sourceNode, left, right);
-            case BinaryOperator.DIVIDE -> 
-                primitiveOperationUnit.computeBinaryDivide(sourceNode, left, right);
-            case BinaryOperator.MODULUS -> 
-                primitiveOperationUnit.computeBinaryModulus(sourceNode, left, right);
+        switch (sourceNode.operator) {
+            case ADD:
+                return primitiveOperationUnit.computeBinaryAdd(sourceNode, left, right);
+                
+            case SUBTRACT:
+                return primitiveOperationUnit.computeBinarySubtract(sourceNode, left, right);
             
-            default ->
+            case MULTIPLY:
+                return primitiveOperationUnit.computeBinaryMultiply(sourceNode, left, right);
+                
+            case DIVIDE:
+                return primitiveOperationUnit.computeBinaryDivide(sourceNode, left, right);
+                
+            case MODULUS:
+                return primitiveOperationUnit.computeBinaryModulus(sourceNode, left, right);
+            
+            default:
                 throw new InterpreterRuntimeException(
                         "Unsupported operator: " + sourceNode.operator.toString(), 
                         sourceNode.getLocation());
-        };
+        }
     }
     
     private RuntimeValue interpretLiteralExpression(LiteralExpressionNode sourceNode, ExecutionContext context) {
-        return switch (sourceNode.value) {
-            case LiteralExpressionNode.LiteralValue.Int intLiteral ->
-                new RuntimeValue.IntValue(intLiteral.value);
-                
-            case LiteralExpressionNode.LiteralValue.Float floatLiteral ->
-                new RuntimeValue.FloatValue(floatLiteral.value);
-                
-            case LiteralExpressionNode.LiteralValue.Boolean booleanLiteral ->
-                new RuntimeValue.BooleanValue(booleanLiteral.value);
-                
-            case LiteralExpressionNode.LiteralValue.String stringLiteral ->
-                new RuntimeValue.StringValue(stringLiteral.value);
-                
-            case LiteralExpressionNode.LiteralValue.Null _ ->
-                RuntimeValue.NullValue.getInstance();
-                
-            default ->
-                throw new IllegalStateException("Invalid literal");
-        };
+        if (sourceNode.value instanceof LiteralExpressionNode.LiteralValue.Int intLiteral) {
+            return new RuntimeValue.IntValue(intLiteral.value);
+        }
+        
+        if (sourceNode.value instanceof LiteralExpressionNode.LiteralValue.Float floatLiteral) {
+            return new RuntimeValue.FloatValue(floatLiteral.value);
+        }
+        
+        if (sourceNode.value instanceof LiteralExpressionNode.LiteralValue.Boolean booleanLiteral) {
+            return new RuntimeValue.BooleanValue(booleanLiteral.value);
+        }
+        
+        if (sourceNode.value instanceof LiteralExpressionNode.LiteralValue.String stringLiteral) {
+            return new RuntimeValue.StringValue(stringLiteral.value);
+        }
+        
+        if (sourceNode.value instanceof LiteralExpressionNode.LiteralValue.Null) {
+            return RuntimeValue.NULL;
+        }
+        
+        throw new IllegalStateException("Invalid literal");
     }
 }

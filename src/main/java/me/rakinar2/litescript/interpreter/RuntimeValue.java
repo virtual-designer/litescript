@@ -102,44 +102,62 @@ public abstract sealed class RuntimeValue {
     }
     
     public static String getTypeOf(RuntimeValue value) {
-         return switch (value) {
-            case IntValue _ -> "Int";
-            case FloatValue _ -> "Float";
-            case BooleanValue _ -> "Boolean";
-            case StringValue _ -> "String";
-            case NullValue _ -> "Null";
-                
-            default ->
-                throw new IllegalStateException("Invalid literal");
-        };
+        if (value instanceof IntValue) {
+            return "Int";
+        }
+        
+        if (value instanceof FloatValue) {
+            return "Float";
+        }
+        
+        if (value instanceof StringValue) {
+            return "String";
+        }
+        
+        if (value instanceof BooleanValue) {
+            return "Boolean";
+        }
+        
+        if (value instanceof NullValue) {
+            return "Null";
+        }
+        
+        throw new IllegalStateException("Invalid literal");
     }
     
     public static FloatValue convertValueToFloat(RuntimeValue value) {
-        return switch (value) {
-            case FloatValue floatValue -> floatValue;
-            case IntValue intValue -> new FloatValue((double) intValue.value);
-            default -> 
-                throw new IllegalStateException(String.format("Cannot convert '%s' to Float", getTypeOf(value)));
-        };
+        if (value instanceof FloatValue floatValue) {
+            return floatValue;
+        }
+        
+        if (value instanceof IntValue intValue) {
+            return new FloatValue((double) intValue.value);
+        }
+        
+        throw new IllegalStateException(String.format("Cannot convert '%s' to Float", getTypeOf(value)));
     }
     
     public static StringValue convertValueToString(RuntimeValue value) {
-        return switch (value) {
-            case IntValue intValue ->
-                new StringValue(Long.toString(intValue.value));
-                
-            case FloatValue floatValue ->
-                new StringValue(ValueFormatter.DECIMAL_FORMATTER.format(floatValue.value));
-                
-            case BooleanValue booleanValue ->
-                new StringValue(booleanValue.value ? "true" : "false");
-                
-            case StringValue stringValue -> stringValue;
-                
-            case NullValue _ -> new StringValue("null");
-                
-            default ->
-                throw new IllegalStateException("Invalid literal");
-        };
+        if (value instanceof IntValue intValue) {
+            return new StringValue(Long.toString(intValue.value));
+        }
+        
+        if (value instanceof FloatValue floatValue) {
+            return new StringValue(ValueFormatter.DECIMAL_FORMATTER.format(floatValue.value));
+        }
+        
+        if (value instanceof StringValue stringValue) {
+            return stringValue;
+        }
+        
+        if (value instanceof BooleanValue booleanValue) {
+            return new StringValue(booleanValue.value ? "true" : "false");
+        }
+        
+        if (value instanceof NullValue) {
+            return new StringValue("null");
+        }
+        
+        throw new IllegalStateException("Invalid literal");
     }
 }
