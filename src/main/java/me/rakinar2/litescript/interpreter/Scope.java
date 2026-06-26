@@ -55,6 +55,10 @@ public class Scope {
         return symbol;
     }
     
+    public Symbol getImmediateSymbol(String name) {
+        return symbolTable.getOrDefault(name, null);
+    }
+    
     public void setSymbol(Symbol symbol) {
         Symbol existing = symbolTable.getOrDefault(symbol.getName(), null);
         

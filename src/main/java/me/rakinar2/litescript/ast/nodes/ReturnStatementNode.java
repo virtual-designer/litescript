@@ -17,40 +17,31 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * 
  */
-package me.rakinar2.litescript.interpreter;
+package me.rakinar2.litescript.ast.nodes;
+
+import me.rakinar2.litescript.ast.Location;
+import java.util.List;
+import java.util.Optional;
 
 /**
  *
  * @author rakinar2
  */
-public class ExecutionContext {
-    private Scope scope;
-    private boolean insideFunction = false;
-
-    public boolean isInsideFunction() {
-        return insideFunction;
-    }
-
-    public void setInsideFunction(boolean insideFunction) {
-        this.insideFunction = insideFunction;
+public class ReturnStatementNode extends StatementNode {
+    public final Optional<ExpressionNode> value;
+    
+    public ReturnStatementNode(Location location) {
+        super(location);
+        this.value = Optional.empty();
     }
     
-    public Scope getScope() {
-        return scope;
+    public ReturnStatementNode(ExpressionNode value, Location location) {
+        super(location);
+        this.value = Optional.ofNullable(value);
     }
 
-    public ExecutionContext setScope(Scope scope) {
-        this.scope = scope;
-        return this;
-    }
-    
-    public static ExecutionContext create() {
-        return new ExecutionContext();
-    }
-    
-    public static ExecutionContext create(Scope scope) {
-        final var context = new ExecutionContext();
-        context.setScope(scope);
-        return context;
+    @Override
+    public Iterable<AbstractNode> getBranches() {
+        return value.isPresent() ? List.of(value.get()) : List.of();
     }
 }

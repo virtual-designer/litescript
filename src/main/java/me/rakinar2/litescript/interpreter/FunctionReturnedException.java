@@ -23,34 +23,11 @@ package me.rakinar2.litescript.interpreter;
  *
  * @author rakinar2
  */
-public class ExecutionContext {
-    private Scope scope;
-    private boolean insideFunction = false;
-
-    public boolean isInsideFunction() {
-        return insideFunction;
-    }
-
-    public void setInsideFunction(boolean insideFunction) {
-        this.insideFunction = insideFunction;
-    }
+public class FunctionReturnedException extends RuntimeException {
+    public final RuntimeValue value;
     
-    public Scope getScope() {
-        return scope;
-    }
-
-    public ExecutionContext setScope(Scope scope) {
-        this.scope = scope;
-        return this;
-    }
-    
-    public static ExecutionContext create() {
-        return new ExecutionContext();
-    }
-    
-    public static ExecutionContext create(Scope scope) {
-        final var context = new ExecutionContext();
-        context.setScope(scope);
-        return context;
+    public FunctionReturnedException(RuntimeValue value) {
+        super("Function returned");
+        this.value = value;
     }
 }

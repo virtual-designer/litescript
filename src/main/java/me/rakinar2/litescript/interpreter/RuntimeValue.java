@@ -22,6 +22,7 @@ package me.rakinar2.litescript.interpreter;
 import java.lang.reflect.Method;
 import java.util.List;
 import me.rakinar2.litescript.ast.nodes.AbstractNode;
+import me.rakinar2.litescript.ast.nodes.FunctionDeclarationNode;
 
 /**
  *
@@ -86,34 +87,27 @@ public abstract sealed class RuntimeValue {
     
     public static final class FunctionValue extends RuntimeValue {
         public final String name;
-        public final List<AbstractNode> body;
-        public final List<String> parameters;
+        public final FunctionDeclarationNode declaration;
         public final Object instance;
         public final Method method;
         
-        private int minArgumentCount;
-        private int maxArgumentCount;
+        private int minArgumentCount = 0;
+        private int maxArgumentCount = Integer.MAX_VALUE;
         private boolean variadic = false;
         private boolean builtin = false;
         
-        
-        public FunctionValue(String name, List<String> parameters, List<AbstractNode> body) {
+        public FunctionValue(String name, FunctionDeclarationNode declaration) {
             this.name = name;
-            this.parameters = parameters;
-            this.body = body;
+            this.declaration = declaration;
             this.instance = null;
             this.method = null;
         }
-
         
         public FunctionValue(String name, List<String> parameters, Object instance, Method method) {
             this.name = name;
-            this.parameters = parameters;
-            this.body = null;
+            this.declaration = null;
             this.instance = instance;
             this.method = method;
-            this.minArgumentCount = minArgumentCount;
-            this.maxArgumentCount = maxArgumentCount;
         }
 
         public int getMinArgumentCount() {

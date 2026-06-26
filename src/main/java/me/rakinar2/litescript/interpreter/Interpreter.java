@@ -30,8 +30,10 @@ import me.rakinar2.litescript.ast.nodes.CallExpressionNode;
 import me.rakinar2.litescript.ast.nodes.EmptyStatementNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionStatementNode;
+import me.rakinar2.litescript.ast.nodes.FunctionDeclarationNode;
 import me.rakinar2.litescript.ast.nodes.IdentifierNode;
 import me.rakinar2.litescript.ast.nodes.LiteralExpressionNode;
+import me.rakinar2.litescript.ast.nodes.ReturnStatementNode;
 import me.rakinar2.litescript.ast.nodes.RootNode;
 import me.rakinar2.litescript.ast.nodes.StatementNode;
 import me.rakinar2.litescript.ast.nodes.VariableDeclarationNode;
@@ -83,18 +85,53 @@ public class Interpreter {
             return interpretVariableDeclaration(node, context);
         }
         
+        if (sourceNode instanceof FunctionDeclarationNode node) {
+            return interpretFunctionDeclaration(node, context);
+        }
+        
         if (sourceNode instanceof EmptyStatementNode) {
             return RuntimeValue.NULL;
+        }
+        
+        if (sourceNode instanceof ReturnStatementNode node) {
+            interpretReturnStatement(node, context);
         }
         
         throw new InterpreterRuntimeException("Unable to interpret node", 
                 sourceNode.getLocation());
     }
     
+    private RuntimeValue interpretReturnStatement(ReturnStatementNode sourceNode, ExecutionContext context) {
+        if (!context.isInsideFunction()) {
+            throw new InterpreterRuntimeException("'return' cannot be used outside function declaration", 
+                sourceNode.getLocation());
+        }
+        
+        throw new FunctionReturnedException(
+            sourceNode.value
+                .map(v -> interpretExpression(v, context))
+                .orElse(RuntimeValue.NULL)
+        );
+    }
+    
+    private RuntimeValue interpretFunctionDeclaration(FunctionDeclarationNode sourceNode, ExecutionContext context) {
+        final Scope scope = context.getScope();
+        
+        if (scope.getImmediateSymbol(sourceNode.name.symbol) != null) {
+            throw new InterpreterRuntimeException(
+                    String.format("Identifier '%s' is already defined in this scope", sourceNode.name.symbol),
+                    sourceNode.name.getLocation());
+        }
+        
+        final RuntimeValue value = new RuntimeValue.FunctionValue(sourceNode.name.symbol, sourceNode);
+        scope.setSymbol(new Symbol(sourceNode.name.symbol, sourceNode, value));        
+        return value;
+    }
+    
     private RuntimeValue interpretVariableDeclaration(VariableDeclarationNode sourceNode, ExecutionContext context) {
         final Scope scope = context.getScope();
         
-        if (scope.getSymbol(sourceNode.identifier.symbol) != null) {
+        if (scope.getImmediateSymbol(sourceNode.identifier.symbol) != null) {
             throw new InterpreterRuntimeException(
                     String.format("Identifier '%s' is already defined in this scope", sourceNode.identifier.symbol),
                     sourceNode.identifier.getLocation());
@@ -157,18 +194,19 @@ public class Interpreter {
         
         
         if (callee instanceof RuntimeValue.FunctionValue fn) {
-            int minArgumentCount = Math.max(fn.parameters.size() == 0 ? Integer.MIN_VALUE : fn.parameters.size(), fn.getMinArgumentCount());
-            int maxArgumentCount = Math.min(fn.parameters.size() == 0 ? Integer.MAX_VALUE : fn.parameters.size(), fn.getMaxArgumentCount());
+            int paramCount = fn.declaration != null ? fn.declaration.parameterNames.size() : 0;
+            int minArgumentCount = Math.max(paramCount == 0 && fn.isBuiltin() ? Integer.MIN_VALUE : paramCount, fn.getMinArgumentCount());
+            int maxArgumentCount = Math.min(paramCount == 0 && fn.isBuiltin() ? Integer.MAX_VALUE : paramCount, fn.getMaxArgumentCount());
 
             if (arguments.size() < minArgumentCount) {
                 throw new InterpreterRuntimeException(
-                    String.format("Cannot call this function without at least %d arguments", minArgumentCount), 
+                    String.format("Cannot call function '%s' without at least %d arguments", fn.name, minArgumentCount), 
                     sourceNode.getLocation());
             }
 
             if (arguments.size() > maxArgumentCount) {
                 throw new InterpreterRuntimeException(
-                    String.format("Cannot call this function with more than %d arguments", maxArgumentCount), 
+                    String.format("Cannot call function '%s' with more than %d arguments", fn.name, maxArgumentCount), 
                     sourceNode.getLocation());
             }
 
@@ -187,9 +225,30 @@ public class Interpreter {
                     throw new RuntimeException(exception);
                 }
             }
-            
-            throw new InterpreterRuntimeException("User-defined function calls are not supported yet", 
-                sourceNode.getLocation());
+            else {
+                final Scope parentScope = context.getScope();
+                final Scope scope = parentScope.createChild();
+                final ExecutionContext childContext = ExecutionContext.create(scope);
+                
+                for (int i = 0; i < fn.declaration.parameterNames.size(); i++) {
+                    final var parameterName = fn.declaration.parameterNames.get(i);
+                    final var argument = i >= arguments.size() ? RuntimeValue.NULL : arguments.get(i);
+                    scope.setSymbol(new Symbol(parameterName.symbol, parameterName, argument));
+                }
+                
+                childContext.setInsideFunction(true);
+                
+                for (final var childNode : fn.declaration.body) {
+                    try {
+                        interpret(childNode, childContext);
+                    }
+                    catch (FunctionReturnedException exception) {
+                        return exception.value;
+                    }
+                }
+                
+                return RuntimeValue.NULL;
+            }
         }
         
         throw new InterpreterRuntimeException("Cannot call a non-function value", 

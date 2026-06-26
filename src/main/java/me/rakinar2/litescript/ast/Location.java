@@ -36,11 +36,11 @@ public record Location(String fileName, long lineStart, long columnStart,
         }
         
         for (SourceLocatable locatable : locations) {
-            final Location location = locatable.getLocation();
-            
-            if (location == null) {
+            if (locatable == null) {
                 continue;
             }
+            
+            final Location location = locatable.getLocation();
             
             if (location.lineStart < lineStart || 
                 (location.lineStart == lineStart && 

@@ -31,8 +31,10 @@ import me.rakinar2.litescript.ast.nodes.CallExpressionNode;
 import me.rakinar2.litescript.ast.nodes.EmptyStatementNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionStatementNode;
+import me.rakinar2.litescript.ast.nodes.FunctionDeclarationNode;
 import me.rakinar2.litescript.ast.nodes.IdentifierNode;
 import me.rakinar2.litescript.ast.nodes.LiteralExpressionNode;
+import me.rakinar2.litescript.ast.nodes.ReturnStatementNode;
 import me.rakinar2.litescript.ast.nodes.RootNode;
 import me.rakinar2.litescript.ast.nodes.StatementNode;
 import me.rakinar2.litescript.ast.nodes.VariableDeclarationNode;
@@ -46,12 +48,14 @@ import me.rakinar2.litescript.frontend.lexer.TokenType;
 public class Parser {
     private static final List<Class<? extends AbstractNode>> NODES_WITHOUT_TRAILING_SEMICOLON = 
         List.of(
-            EmptyStatementNode.class
+            EmptyStatementNode.class,
+            FunctionDeclarationNode.class
         );
     
     private final List<Token> tokens;
     private boolean requireSemicolons = true;
     private int index = 0;
+    private boolean insideFunctionDeclaration = false;
     
     public Parser(List<Token> tokens, boolean requireSemicolons) {
         this.tokens = tokens;
@@ -279,11 +283,67 @@ public class Parser {
         );
     }
     
+    public FunctionDeclarationNode parseFunctionDeclaration() {
+        insideFunctionDeclaration = true;
+        
+        final Token token = expect(TokenType.FUNCTION);
+        final IdentifierNode identifier = parseIdentifierNode();
+        final List<IdentifierNode> parameters = new LinkedList<>();
+        final List<AbstractNode> body = new LinkedList<>();
+        
+        expect(TokenType.PAREN_OPEN);
+        
+        while (!isEOF() && peek().type != TokenType.PAREN_CLOSE) {
+            parameters.add(parseIdentifierNode());
+
+            if ((!isEOF() && peek().type != TokenType.PAREN_CLOSE)
+                || (peek(1) != null && peek().type == TokenType.COMMA 
+                    && peek(1).type == TokenType.PAREN_CLOSE)) {
+                expect(TokenType.COMMA);
+            }
+        }
+        
+        expect(TokenType.PAREN_CLOSE);
+        expect(TokenType.BRACE_OPEN);
+        
+        while (!isEOF() && peek().type != TokenType.BRACE_CLOSE) {
+            body.add(parseStatement());
+        }
+        
+        final var lastToken = expect(TokenType.BRACE_CLOSE);
+        
+        insideFunctionDeclaration = false;
+        
+        return new FunctionDeclarationNode(
+            identifier,
+            parameters,
+            body,
+            Location.combine(token, identifier, lastToken)
+        );
+    }
+    
+    public ReturnStatementNode parseReturnStatement() {
+        if (!insideFunctionDeclaration) {
+            throw new ParserException("'return' cannot be used outside function declaration", peek().location);
+        }
+        
+        final var token = expect(TokenType.RETURN);
+        ExpressionNode value = null;
+        
+        if (!isEOF() && peek().type != TokenType.SEMICOLON) {
+            value = parseExpression();   
+        }
+        
+        return new ReturnStatementNode(value, Location.combine(token, value));
+    }
+    
     public StatementNode parseStatement() {
         StatementNode statement = switch (peek().type) {
             case SEMICOLON -> new EmptyStatementNode(expect(TokenType.SEMICOLON).location);
             case LET, FINAL -> parseVariableDeclaration();
-            
+            case FUNCTION -> parseFunctionDeclaration();
+            case RETURN -> parseReturnStatement();
+                
             default -> {
                 final ExpressionNode expression = parseExpression();
                 yield new ExpressionStatementNode(expression, expression.location);

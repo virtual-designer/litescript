@@ -58,7 +58,9 @@ public class Lexer {
             Map.entry("false", TokenType.BOOLEAN_FALSE),
             Map.entry("null", TokenType.NULL),
             Map.entry("final", TokenType.FINAL),
-            Map.entry("let", TokenType.LET)
+            Map.entry("let", TokenType.LET),
+            Map.entry("return", TokenType.RETURN),
+            Map.entry("function", TokenType.FUNCTION)
         );
     
     private String fileName;

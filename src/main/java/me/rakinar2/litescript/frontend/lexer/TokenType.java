@@ -50,4 +50,6 @@ public enum TokenType {
     LET,
     EQUAL,
     COMMA,
+    FUNCTION,
+    RETURN,
 }
