@@ -60,7 +60,9 @@ public class Lexer {
             Map.entry("final", TokenType.FINAL),
             Map.entry("let", TokenType.LET),
             Map.entry("return", TokenType.RETURN),
-            Map.entry("function", TokenType.FUNCTION)
+            Map.entry("function", TokenType.FUNCTION),
+            Map.entry("if", TokenType.IF),
+            Map.entry("else", TokenType.ELSE)
         );
     
     private String fileName;

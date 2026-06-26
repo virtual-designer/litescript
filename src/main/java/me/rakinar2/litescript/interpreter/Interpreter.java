@@ -26,12 +26,14 @@ import me.rakinar2.litescript.ast.Location;
 import me.rakinar2.litescript.ast.nodes.AbstractNode;
 import me.rakinar2.litescript.ast.nodes.AssignmentExpressionNode;
 import me.rakinar2.litescript.ast.nodes.BinaryExpressionNode;
+import me.rakinar2.litescript.ast.nodes.BlockStatementNode;
 import me.rakinar2.litescript.ast.nodes.CallExpressionNode;
 import me.rakinar2.litescript.ast.nodes.EmptyStatementNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionStatementNode;
 import me.rakinar2.litescript.ast.nodes.FunctionDeclarationNode;
 import me.rakinar2.litescript.ast.nodes.IdentifierNode;
+import me.rakinar2.litescript.ast.nodes.IfStatementNode;
 import me.rakinar2.litescript.ast.nodes.LiteralExpressionNode;
 import me.rakinar2.litescript.ast.nodes.ReturnStatementNode;
 import me.rakinar2.litescript.ast.nodes.RootNode;
@@ -94,11 +96,43 @@ public class Interpreter {
         }
         
         if (sourceNode instanceof ReturnStatementNode node) {
-            interpretReturnStatement(node, context);
+            return interpretReturnStatement(node, context);
+        }
+        
+        if (sourceNode instanceof BlockStatementNode node) {
+            return interpretBlockStatement(node, context);
+        }
+        
+        if (sourceNode instanceof IfStatementNode node) {
+            return interpretIfStatement(node, context);
         }
         
         throw new InterpreterRuntimeException("Unable to interpret node", 
                 sourceNode.getLocation());
+    }
+    
+    private RuntimeValue interpretIfStatement(IfStatementNode sourceNode, ExecutionContext context) {
+        RuntimeValue.BooleanValue value = RuntimeValue.convertValueToBoolean(interpretExpression(sourceNode.condition, context));
+        
+        if (value == RuntimeValue.BooleanValue.TRUE) {
+            interpret(sourceNode.then, context);
+        }
+        else if (sourceNode.alternate.isPresent()) {
+            interpret(sourceNode.alternate.get(), context);
+        }
+        
+        return RuntimeValue.NULL;
+    }
+    
+    private RuntimeValue interpretBlockStatement(BlockStatementNode sourceNode, ExecutionContext context) {
+        final Scope scope = context.getScope().createChild();
+        final ExecutionContext childContext = ExecutionContext.create(scope);
+        
+        for (final var childNode : sourceNode.children) {
+            interpret(childNode, childContext);
+        }
+            
+        return RuntimeValue.NULL;
     }
     
     private RuntimeValue interpretReturnStatement(ReturnStatementNode sourceNode, ExecutionContext context) {
@@ -335,7 +369,7 @@ public class Interpreter {
         }
         
         if (sourceNode.value instanceof LiteralExpressionNode.LiteralValue.Boolean booleanLiteral) {
-            return new RuntimeValue.BooleanValue(booleanLiteral.value);
+            return RuntimeValue.BooleanValue.from(booleanLiteral.value);
         }
         
         if (sourceNode.value instanceof LiteralExpressionNode.LiteralValue.String stringLiteral) {

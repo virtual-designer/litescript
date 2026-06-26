@@ -21,7 +21,6 @@ package me.rakinar2.litescript.interpreter;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import me.rakinar2.litescript.ast.nodes.AbstractNode;
 import me.rakinar2.litescript.ast.nodes.FunctionDeclarationNode;
 
 /**
@@ -73,15 +72,22 @@ public abstract sealed class RuntimeValue {
     }
     
     public static final class BooleanValue extends RuntimeValue {
+        public static final BooleanValue TRUE = new BooleanValue(true);
+        public static final BooleanValue FALSE = new BooleanValue(false);
+        
         public final boolean value;
         
-        public BooleanValue(boolean value) {
+        private BooleanValue(boolean value) {
             this.value = value;
         }
 
         @Override
         public String toPrettyString() {
             return String.format("[RuntimeValue (Boolean): %s]", value ? "true" : "false");
+        }
+        
+        public static BooleanValue from(boolean value) {
+            return value ? TRUE : FALSE;
         }
     }
     
@@ -195,6 +201,30 @@ public abstract sealed class RuntimeValue {
         }
         
         throw new IllegalStateException("Invalid literal");
+    }
+    
+    public static BooleanValue convertValueToBoolean(RuntimeValue value) {
+        if (value instanceof FloatValue f) {
+            return f.value != 0.0 ? BooleanValue.TRUE : BooleanValue.FALSE;
+        }
+        
+        if (value instanceof IntValue i) {
+            return i.value != 0 ? BooleanValue.TRUE : BooleanValue.FALSE;
+        }
+        
+        if (value instanceof StringValue s) {
+            return BooleanValue.from(!s.value.isEmpty());
+        }
+        
+        if (value instanceof NullValue) {
+            return BooleanValue.FALSE;
+        }
+        
+        if (value instanceof BooleanValue b) {
+            return b;
+        }
+        
+        return BooleanValue.TRUE;
     }
     
     public static FloatValue convertValueToFloat(RuntimeValue value) {

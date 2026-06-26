@@ -27,12 +27,14 @@ import me.rakinar2.litescript.ast.nodes.AbstractNode;
 import me.rakinar2.litescript.ast.nodes.AssignmentExpressionNode;
 import me.rakinar2.litescript.ast.nodes.BinaryExpressionNode;
 import me.rakinar2.litescript.ast.nodes.BinaryOperator;
+import me.rakinar2.litescript.ast.nodes.BlockStatementNode;
 import me.rakinar2.litescript.ast.nodes.CallExpressionNode;
 import me.rakinar2.litescript.ast.nodes.EmptyStatementNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionNode;
 import me.rakinar2.litescript.ast.nodes.ExpressionStatementNode;
 import me.rakinar2.litescript.ast.nodes.FunctionDeclarationNode;
 import me.rakinar2.litescript.ast.nodes.IdentifierNode;
+import me.rakinar2.litescript.ast.nodes.IfStatementNode;
 import me.rakinar2.litescript.ast.nodes.LiteralExpressionNode;
 import me.rakinar2.litescript.ast.nodes.ReturnStatementNode;
 import me.rakinar2.litescript.ast.nodes.RootNode;
@@ -49,7 +51,8 @@ public class Parser {
     private static final List<Class<? extends AbstractNode>> NODES_WITHOUT_TRAILING_SEMICOLON = 
         List.of(
             EmptyStatementNode.class,
-            FunctionDeclarationNode.class
+            FunctionDeclarationNode.class,
+            IfStatementNode.class
         );
     
     private final List<Token> tokens;
@@ -337,12 +340,44 @@ public class Parser {
         return new ReturnStatementNode(value, Location.combine(token, value));
     }
     
+    public BlockStatementNode parseBlockStatement() {
+         final var startToken = expect(TokenType.BRACE_OPEN);
+         final var children = new LinkedList<AbstractNode>();
+         
+         while (!isEOF() && peek().type != TokenType.BRACE_CLOSE) {
+             children.add(parseStatement());
+         }
+         
+         final var endToken = expect(TokenType.BRACE_CLOSE);
+         return new BlockStatementNode(children, Location.combine(startToken, endToken));
+    }
+    
+    public IfStatementNode parseIfStatement() {
+        final var ifToken = expect(TokenType.IF);
+        
+        expect(TokenType.PAREN_OPEN);
+        final var condition = parseExpression();
+        expect(TokenType.PAREN_CLOSE);
+        
+        final var then = parseStatement();
+        StatementNode alternate = null;
+        
+        if (!isEOF() && peek().type == TokenType.ELSE) {
+            consume();
+            alternate = parseStatement();
+        }
+        
+        return new IfStatementNode(condition, then, alternate, Location.combine(ifToken, then, alternate));
+    }
+    
     public StatementNode parseStatement() {
         StatementNode statement = switch (peek().type) {
             case SEMICOLON -> new EmptyStatementNode(expect(TokenType.SEMICOLON).location);
             case LET, FINAL -> parseVariableDeclaration();
             case FUNCTION -> parseFunctionDeclaration();
             case RETURN -> parseReturnStatement();
+            case BRACE_OPEN -> parseBlockStatement();
+            case IF -> parseIfStatement();
                 
             default -> {
                 final ExpressionNode expression = parseExpression();
@@ -354,6 +389,10 @@ public class Parser {
             expect("Expected ';' at the end of statement", TokenType.SEMICOLON);
         }
         
+        while (!isEOF() && peek().type == TokenType.SEMICOLON) {
+            consume();
+        }
+
         return statement;
     }
     
