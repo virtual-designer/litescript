@@ -32,7 +32,8 @@ import me.rakinar2.litescript.interpreter.Symbol;
  */
 public class Loader {
     private static final List<Class<?>> LIBRARY_CLASSES = List.of(
-        IO.class
+        IO.class,
+        MathUtils.class
     );
     
     public void load(Scope scope) {

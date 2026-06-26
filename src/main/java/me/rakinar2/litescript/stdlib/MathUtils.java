@@ -25,28 +25,37 @@ import me.rakinar2.litescript.interpreter.RuntimeValue;
  *
  * @author rakinar2
  */
-public class IO {
+public class MathUtils {
     @Export
-    @Function(varargs = true)
-    public RuntimeValue println(RuntimeValue... arguments) {
-        final StringBuilder sb = new StringBuilder();
+    @Function(varargs = true, minArgumentCount = 1)
+    public RuntimeValue max(RuntimeValue... arguments) {
+        long maxValue = Long.MIN_VALUE;
         
-        for (int i = 0; i < arguments.length; i++) {
-            sb.append(RuntimeValue.convertValueToString(arguments[i]).value);
-            
-            if (i < arguments.length - 1) {
-                sb.append(" ");
+        for (final var value : arguments) {
+            if (value instanceof RuntimeValue.IntValue i) {
+                if (i.value > maxValue) {
+                    maxValue = i.value;
+                }
             }
         }
         
-        System.out.println(sb.toString());
-        return RuntimeValue.NULL;
+        return new RuntimeValue.IntValue(maxValue);
     }
     
     @Export
-    @Function(minArgumentCount = 1, maxArgumentCount = 1)
-    public RuntimeValue print(RuntimeValue argument) {
-        System.out.print(RuntimeValue.convertValueToString(argument).value);
-        return RuntimeValue.NULL;
+    @Function(varargs = true, minArgumentCount = 1)
+    public RuntimeValue min(RuntimeValue... arguments) {
+        long minValue = Long.MAX_VALUE;
+        
+        for (final var value : arguments) {
+            if (value instanceof RuntimeValue.IntValue i) {
+                if (i.value < minValue) {
+                    minValue = i.value;
+                }
+            }
+        }
+        
+        return new RuntimeValue.IntValue(minValue);
     }
+    
 }
